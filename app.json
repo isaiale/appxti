@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "app-movil-xti",
+    "slug": "app-movil-xti",
+    "version": "1.0.0",
+    "sdkVersion": "52.0.0",
+    "projectId": "f15b8b4c-e351-4a0b-a2c1-39e2d33f48a5",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "f17d50d7-dad4-4052-a9f3-8ca5c125657f"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/f17d50d7-dad4-4052-a9f3-8ca5c125657f"
+    }
+  }
+}
