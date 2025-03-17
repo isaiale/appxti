@@ -10,35 +10,33 @@ import {
   ActivityIndicator,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
-// import CommentsModal from "../../components/CommentsModal";
 import ModalComponent from "./ModalComment";
 import ReactionButton from "../../components/ReactionButton";
+import NetInfo from "@react-native-community/netinfo";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import socket from "../../services/Socket"; // Importa el socket
 import { AuthContext } from "../../context/AuthContext";
 import { baseURL } from "../../services/url";
 
-const { width } = Dimensions.get("window");
+const screenWidth = Dimensions.get("window").width;
+const imageHeight = (screenWidth * 5) / 4;
 
 const PostsScreen = () => {
-  const [posts, setPosts] = useState([]); // Almacena publicaciones desde la API
-  // const [ComentPosts, setComentPosts] = useState([]);
-  const [loading, setLoading] = useState(false); // Indicador de carga inicial (opcional)
-  // const [selectedPost, setSelectedPost] = useState(null);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [page, setPage] = useState(1); // Página actual
-  const [hasMore, setHasMore] = useState(true); // Indica si hay más datos
-  const [isLoading, setIsLoading] = useState(false); // Controla la consulta en curso
-  const [refreshing, setRefreshing] = useState(false); // Controla el pull-to-refresh
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
   const [postID, setPostID] = useState("");
-
   const { user } = useContext(AuthContext);
 
   // ✅ Obtener publicaciones desde la API
   const fetchPosts = async (currentPage = 1, limit = 10) => {
-    // Evita hacer consultas si ya se está cargando o si no hay más datos (excepto en el refresh)    
     if (isLoading && !refreshing) return;
 
-    // Si es la primera página en un refresh, limpia la lista
     if (currentPage === 1) {
       setPosts([]);
       setHasMore(true);
@@ -46,11 +44,19 @@ const PostsScreen = () => {
 
     setIsLoading(true);
 
-    let id_usuario = user.id; // Obtener el ID del partido del usuario
-    console.log("ID Partido:", id_usuario);
+    const netInfo = await NetInfo.fetch();
+    if (!netInfo.isConnected) {
+      console.log("⚠️ Sin conexión, cargando posts desde AsyncStorage...");
+      const storedPosts = await AsyncStorage.getItem("posts");
+      if (storedPosts) {
+        setPosts(JSON.parse(storedPosts));
+      }
+      setIsLoading(false);
+      return;
+    }
 
     try {
-      const url = `${baseURL}/post/${id_usuario}?page=${currentPage}&limit=${limit}`;
+      const url = `${baseURL}/post/usuario/${user.id}?page=${currentPage}&limit=${limit}`;
       console.log("URL de la API:", url);
 
       const response = await fetch(url, {
@@ -62,20 +68,90 @@ const PostsScreen = () => {
         throw new Error(`Error en la solicitud: ${response.statusText}`);
       }
 
-      const data = await response.json(); // Convertir respuesta a JSON
-      console.log("Respuesta del servidor:", data);
+      const data = await response.json();
+      console.log("📌 Respuesta del servidor:", data);
 
       if (data.posts.length < limit) {
-        setHasMore(false); // No hay más datos
+        setHasMore(false);
       }
 
-      setPosts((prevPosts) => [...prevPosts, ...data.posts]); // Agrega las nuevas publicaciones
-      setPage(currentPage + 1); // Incrementa la página
+      // 🔥 Mezclar nuevos posts con los anteriores sin duplicados
+      setPosts((prevPosts) => {
+        const mergedPosts = [...prevPosts, ...data.posts];
+        const uniquePosts = mergedPosts.filter(
+          (post, index, self) =>
+            index === self.findIndex((p) => p.id_contenido === post.id_contenido)
+        );
+        return uniquePosts;
+      });
+
+      // Guardar en AsyncStorage solo los últimos 50 posts
+      await AsyncStorage.setItem(
+        "posts",
+        JSON.stringify(data.posts.slice(0, 50))
+      );
+
+      setPage(currentPage + 1);
     } catch (error) {
-      console.error("Error al obtener publicaciones:", error);
+      console.error("❌ Error al obtener publicaciones:", error);
     } finally {
       setIsLoading(false);
       setLoading(false);
+    }
+  };
+
+  // 🚀 Detectar reconexión a Internet y recargar posts después de 3 segundos
+  useEffect(() => {
+    let timeoutId;
+
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      if (!isConnected && state.isConnected) {
+        console.log("✅ Conexión restablecida, sincronizando posts en 3 segundos...");
+        timeoutId = setTimeout(() => {
+          setPage(1);
+          setHasMore(true);
+          fetchPosts(1);
+        }, 3000); // Retraso de 3 segundos
+      }
+      setIsConnected(state.isConnected);
+    });
+
+    return () => {
+      unsubscribe(); // Limpiar el listener
+      if (timeoutId) clearTimeout(timeoutId); // Limpiar el timeout
+    };
+  }, [isConnected]);
+
+  // ✅ Función para manejar reacciones
+  const handleReaction = async (postId, newReaction) => {
+    try {
+      const response = await fetch(`${baseURL}/post/reaccion`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id_contenido: postId,
+          id_usuario: user.id,
+          tipo_reaccion: newReaction,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Error en la reacción");
+
+      const updatedReaction = await response.json();
+      console.log("Reacción actualizada:", updatedReaction);
+
+      // ✅ Actualizar estado localmente
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.id_contenido === postId
+            ? { ...post, tipo_reaccion: newReaction }
+            : post
+        )
+      );
+    } catch (error) {
+      console.error("Error al reaccionar:", error);
     }
   };
 
@@ -91,7 +167,7 @@ const PostsScreen = () => {
 
   // ✅ Escuchar evento de Socket.IO para actualizaciones en tiempo real
   useEffect(() => {
-    fetchPosts(); // Obtener publicaciones al cargar la pantalla
+    fetchPosts(1);
     socket.on("nuevoPost", (newPost) => {
       console.log("Nuevo post recibido:", newPost);
       // Inserta el nuevo post al inicio de la lista
@@ -102,7 +178,7 @@ const PostsScreen = () => {
     return () => {
       socket.off("nuevoPost");
     };
-  }, []);
+  }, [isConnected]);
 
   // // ✅ Mostrar modal de comentarios con mejor manejo de errores
   const handleShowComments = async (postId) => {
@@ -188,23 +264,34 @@ const PostsScreen = () => {
                 <View style={styles.reactions}>
                   <ReactionButton
                     type="love"
-                    onPress={() => console.log("Me encanta presionado")}
+                    active={item.tipo_reaccion === "me_encanta"}
+                    onPress={() =>
+                      handleReaction(item.id_contenido, "me_encanta")
+                    }
                   />
                   <ReactionButton
                     type="like"
-                    onPress={() => console.log("Me gusta presionado")}
+                    active={item.tipo_reaccion === "me_gusta"}
+                    onPress={() =>
+                      handleReaction(item.id_contenido, "me_gusta")
+                    }
                   />
                   <ReactionButton
                     type="dislike"
-                    onPress={() => console.log("No me gusta presionado")}
+                    active={item.tipo_reaccion === "no_me_gusta"}
+                    onPress={() =>
+                      handleReaction(item.id_contenido, "no_me_gusta")
+                    }
                   />
+                  <Text style={styles.reaccionText}> {item.total_reacciones}</Text>
                 </View>
+
                 <TouchableOpacity
                   style={styles.commentButton}
                   onPress={() => handleShowComments(item.id_contenido)}
                 >
                   <Icon name="chatbubble-outline" size={25} color="#007BFF" />
-                  <Text style={styles.commentText}> Ver Comentarios</Text>
+                  <Text style={styles.commentText}> {item.total_comentarios}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -240,7 +327,6 @@ const PostsScreen = () => {
           console.log(`🚪 Usuario saliendo del post ${postID}`);
           socket.emit("leavePost", postID); // ✅ Limpiar `postId` al cerrar el modal
         }}
-        // comments={ComentPosts || []}
         postId={postID} // ✅ Pasar el ID del post
       />
     </View>
@@ -250,103 +336,18 @@ const PostsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 10,
     backgroundColor: "#F0F0F0",
+    paddingHorizontal: 20,
   },
-  card: {
-    backgroundColor: "#FFF",
-    borderRadius: 10,
-    padding: 15,
-    marginVertical: 10,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  image: {
-    width: "100%",
-    height: width * 0.9,
-    borderRadius: 8,
-    resizeMode: "cover",
-  },
-  description: {
-    fontSize: 16,
-    color: "#333",
-    marginVertical: 10,
-  },
-  actionsContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 10,
-  },
-  reactions: {
-    flexDirection: "row",
-  },
-  reactionText: {
-    fontSize: 16,
-    marginRight: 10,
-  },
-  commentButton: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  commentText: {
-    fontSize: 17,
-    color: "#007BFF",
-    marginLeft: 5,
-  },
-  commentBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 10,
-    backgroundColor: "#EEE",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-  },
-  input: {
+  loaderContainer: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    fontSize: 14,
-    color: "#333",
-  },
-  sendButton: {
-    // backgroundColor: "#007BFF",
-    padding: 8,
-    borderRadius: 20,
-    marginLeft: 5,
-  },
-
-  /* para la parte de nombre usuario  */
-  userInfo: {
-    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
   },
-  userDetails: {
-    flex: 1,
-  },
-  profilePic: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 10,
-  },
-  nameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    // marginBottom: 50,
-  },
-  userName: {
+  loadingText: {
+    marginTop: 10,
     fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    marginRight: 5,
-  },
-  verifiedIcon: {
-    marginLeft: 5,
+    color: "#666",
   },
   noPostsContainer: {
     flex: 1,
@@ -361,21 +362,80 @@ const styles = StyleSheet.create({
   },
   noPostsSubText: {
     fontSize: 16,
-    color: "#777",
-    textAlign: "center",
-    marginTop: 5,
-    paddingHorizontal: 20,
+    color: "#999",
+    marginTop: 8,
   },
-  loadingText: {
-    fontSize: 18,
-    color: "#333",
-    marginTop: 10,
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 10,
+    marginVertical: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 5,
   },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: "center",
+  userInfo: {
+    flexDirection: "row",
     alignItems: "center",
+    marginBottom: 10,
+  },
+  profilePic: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 10,
+  },
+  userDetails: {
+    flex: 1,
+  },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  verifiedIcon: {
+    marginLeft: 5,
+  },
+  image: {
+    width: "100%",
+    height: imageHeight,
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  description: {
+    fontSize: 14,
+    color: "#555",
+    marginBottom: 10,
+  },
+  actionsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  reactions: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  reaccionText: {
+    fontSize: 16,
+    color: "#555",
+    marginLeft: 5,
+  },
+  commentButton: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  commentText: {
+    fontSize: 16,
+    color: "#555",
+    marginLeft: 5,
   },
 });
 
-export default PostsScreen;
+export default PostsScreen; 

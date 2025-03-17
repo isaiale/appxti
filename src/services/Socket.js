@@ -9,14 +9,14 @@ const socket = io(socketURL, {
   path: "/socket.io/", // Ruta del socket en el servidor
   secure: true, // Importante si usas HTTPS
   rejectUnauthorized: false, // Evita problemas con certificados SSL autofirmados
-});
+}); 
 
 socket.on("connect", () => {
   console.log(`✅ Conectado a Socket.IO con ID: ${socket.id}`);
 });
 
 socket.on("connect_error", (err) => {
-  console.error("❌ Error de conexión con Socket.IO:", err.message);
+  console.log("❌ Error de conexión con Socket.IO:", err.message);
 });
 
 socket.on("disconnect", (reason) => {

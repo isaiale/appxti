@@ -1,7 +1,8 @@
 import React from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { FontAwesome } from "@expo/vector-icons";
+// import { FontAwesome } from "@expo/vector-icons";
+import Icon from "react-native-vector-icons/Ionicons";
 
 const { width } = Dimensions.get("window");
 
@@ -15,7 +16,7 @@ const NavigationCard = ({ image, icon, text, route, largo = 110, ancho = 110, te
       {image ? (
         <Image source={typeof image === "string" ? { uri: image } : image} style={[styles.image, { width: cardSize * 0.5, height: cardlargo * 0.5 }]} resizeMode="contain" />
       ) : (
-        <FontAwesome name={icon} size={iconSize} color="#333" />
+        <Icon name={icon} size={iconSize} color="#333" />
       )}
       <Text style={[styles.text, { fontSize: textSize }]}>{text}</Text>
     </TouchableOpacity>

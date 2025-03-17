@@ -3,8 +3,7 @@ import { View, TextInput, StyleSheet } from "react-native";
 import { debounce } from "lodash";
 import Icon from "react-native-vector-icons/Ionicons";
 
-const SearchBar = ({ data, onSearch, texto = "Buscar..." }) => {  
-  
+const SearchBar = ({ data, onSearch, texto = "Buscar...", filterFunction }) => {  
   const [searchTerm, setSearchTerm] = useState("");
 
   // Función para normalizar el número de teléfono (eliminar espacios y caracteres no numéricos)
@@ -15,16 +14,24 @@ const SearchBar = ({ data, onSearch, texto = "Buscar..." }) => {
     const normalizedTerm = term.toLowerCase().trim(); // Normaliza el texto ingresado
     const normalizedPhoneTerm = normalizePhoneNumber(term); // Normaliza en caso de número
 
-    const results = data.filter((item) => {
-      const normalizedName = item.nombre ? item.nombre.toLowerCase() : "";
-      const normalizedPhone = item.telefono ? normalizePhoneNumber(item.telefono) : ""; // Verifica si hay teléfono
+    let results;
 
-      // Filtrar por nombre o por número de teléfono si está disponible
-      return (
-        normalizedName.includes(normalizedTerm) || 
-        (normalizedPhone && normalizedPhone.includes(normalizedPhoneTerm))
-      );
-    });
+    if (filterFunction) {
+      // Si se proporciona una función de filtrado personalizada, úsala
+      results = filterFunction(data, normalizedTerm, normalizedPhoneTerm);
+    } else {
+      // Lógica de filtrado predeterminada (por nombre y teléfono)
+      results = data.filter((item) => {
+        const normalizedName = item.nombre ? item.nombre.toLowerCase() : "";
+        const normalizedPhone = item.telefono ? normalizePhoneNumber(item.telefono) : ""; // Verifica si hay teléfono
+
+        // Filtrar por nombre o por número de teléfono si está disponible
+        return (
+          normalizedName.includes(normalizedTerm) || 
+          (normalizedPhone && normalizedPhone.includes(normalizedPhoneTerm))
+        );
+      });
+    }
 
     onSearch(results);
   }, 500); // Espera 500ms antes de ejecutar la búsqueda

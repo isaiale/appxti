@@ -31,13 +31,33 @@ const PromoCard = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
+  // Función para truncar el texto a 20 caracteres
+  const truncateText = (text, maxLength = 24) => {
+    if (text.length > maxLength) {
+      return `${text.substring(0, maxLength)}...`;
+    }
+    return text;
+  };
+
   return (
     <View style={styles.card}>
       {/* Encabezado */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          {logo && <Image source={{uri: logo}} style={styles.logo} resizeMode="contain" />}
-          <Text style={styles.headerText}>{title}</Text>
+          {logo && (
+            <Image
+              source={{ uri: logo }}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          )}
+          <Text
+            style={styles.headerText}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {truncateText(title)}
+          </Text>
         </View>
         <TouchableOpacity style={styles.button} onPress={onPressButton}>
           <Text style={styles.buttonText}>Pedir ahora</Text>
@@ -96,25 +116,22 @@ const styles = StyleSheet.create({
   headerLeft: {
     flexDirection: "row",
     alignItems: "center",
+    flexShrink: 1, // Permite que el texto se ajuste sin empujar el botón
   },
   headerText: {
     fontSize: 15,
     fontWeight: "bold",
     color: Colors.textPrimary,
     marginLeft: 10,
+    flexShrink: 1, // Permite que el texto se ajuste sin empujar el botón
   },
   logo: {
     width: 60,
     height: 60,
-    marginBottom:10,
-    // marginRight: 10,
-    // borderWidth: 2, // Grosor del borde
-    // borderColor: Colors.textPrimary, // Color del borde
-    // borderRadius: 10,
+    marginBottom: 10,
   },
   button: {
     borderWidth: 1.5,
-    // borderColor: Colors.textPrimary,
     backgroundColor: Colors.textColor,
     borderRadius: 20,
     paddingHorizontal: 15,
@@ -148,19 +165,12 @@ const styles = StyleSheet.create({
     transform: [{ translateY: -15 }],
   },
   dashedLine: {
-    flex: 1, // Se ajusta al tamaño disponible
-    // height: 1,
+    flex: 1,
     marginLeft: 10,
     marginRight: 10,
-    borderWidth: 1, // Grosor de la línea punteada
-    borderColor: "666", // Color de la línea
-    borderStyle: "dashed",
-    /* width: "100%",
-    height: 1,
     borderWidth: 1,
     borderColor: "#666",
     borderStyle: "dashed",
-    marginBottom: 10, */
   },
   content: {
     marginTop: 10,

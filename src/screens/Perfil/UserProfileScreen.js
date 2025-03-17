@@ -13,11 +13,10 @@ import EditUserProfile from "./EditUserProfile"; // Importa el componente de edi
 
 const UserProfile = () => {
   const { user } = React.useContext(AuthContext); // Obtén los datos del usuario desde el contexto
-  const [isEditModalVisible, setEditModalVisible] = useState(false); // Estado para controlar el modal de edición
+  const [isEditModalVisible, setEditModalVisible] = useState(false); // Estado para controlar el modal de edición  
 
-  const handleEditSave = (updatedUser) => {
-    console.log("Datos actualizados:", updatedUser);
-    // Aquí puedes enviar los datos actualizados al backend o actualizar el estado global
+  const handleEditSave = (updatedUser) => {    
+    console.log("Datos actualizados:", updatedUser);    
     setEditModalVisible(false);
   };
 
@@ -94,7 +93,7 @@ const UserProfile = () => {
 
         {/* Botón de Editar */}
         <TouchableOpacity
-          style={styles.editButton}
+          style={[styles.editButton, { backgroundColor: user?.codigo_color || "#007BFF" },]}
           onPress={() => setEditModalVisible(true)}
         >
           <Icon name="pencil-outline" size={20} color="#FFF" />
@@ -123,13 +122,14 @@ const styles = StyleSheet.create({
   header: {
     alignItems: "center",
     marginBottom: 30,
+    marginTop: 30,
   },
   profileImage: {
-    width: 100,
-    height: 100,
+    width: 120,
+    height: 120,
     borderRadius: 50,
-    borderWidth: 3,
-    borderColor: "#007BFF",
+    borderWidth: 2,
+    borderColor: "#000",
     marginBottom: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 5 },
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   userEmail: {
-    fontSize: 14,
+    fontSize: 18,
     color: "#666",
   },
   infoBox: {
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#007BFF",
+    // backgroundColor: "#007BFF",
     paddingVertical: 12,
     borderRadius: 25,
     marginTop: 20,

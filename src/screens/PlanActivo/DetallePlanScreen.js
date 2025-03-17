@@ -5,10 +5,12 @@ import {
   Image,
   StyleSheet,
   Dimensions,
+  TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
 import { AuthContext } from "../../context/AuthContext";
 import ProgressBar from "../../components/ProgressBar";
+import Icon from "react-native-vector-icons/Ionicons";
 import {
   formatDate,
   calcularDiasRestantes,
@@ -18,25 +20,25 @@ import {
 
 const { width } = Dimensions.get("window");
 
-const DetallePlanActivo = () => {
+const DetallePlanActivo = ({ navigation }) => {
   const { user } = useContext(AuthContext);
-  const Url = "https://crm.likephone.mx/public/img/";
   const urlPlan = "https://likephone.mx/api/SaldoUsuario/";
   const getPlanes = "https://likephone.mx/api/getPlanes";
   const [urlImagen, setUrlImagen] = useState(
     "https://likephone.mx/public/iconos/fondo1.png"
   );
   const [datosPlan, setDatosPlan] = useState(null);
-  // const [planSeleccionado, setPlanSeleccionado] = useState(null);
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
-  const Telefono = "8124447352";
-  // const Telefono = "8124447352";
+  const [error, setError] = useState(null); // Estado para manejar errores
+  const telefono = user.telefono;
+  // const telefono = "8143706526";
 
   const fetchData = useCallback(async () => {
     try {
       const formdata = new FormData();
-      formdata.append("numero", Telefono);
+      formdata.append("numero", telefono);
+      console.log("usuario", telefono);
 
       const res = await fetch(urlPlan, {
         method: "POST",
@@ -51,13 +53,23 @@ const DetallePlanActivo = () => {
       }
 
       const data = await res.json();
-      setDatosPlan(data);
+      console.log("Datos del plan:", data);
+
+      if (data.errorCode === "1211000305" || !data.datos) {
+        // Si el número no tiene un plan activo o los datos son nulos
+        setError("No cuenta con un plan activo");
+        setDatosPlan(null); // Limpiar los datos del plan
+      } else {
+        setDatosPlan(data);
+        setError(null); // Limpiar el mensaje de error
+      }
     } catch (error) {
       console.error("Error en el servidor:", error);
+      setError("Error al obtener los datos del plan");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [telefono]);
 
   const fetchPlans = async () => {
     try {
@@ -65,7 +77,6 @@ const DetallePlanActivo = () => {
       const data = await response.json();
       setPlans(data);
     } catch (error) {
-      Alert.alert("Error", "No se pudo cargar la lista de planes.");
       console.error("Error al obtener los planes:", error);
     }
   };
@@ -75,7 +86,6 @@ const DetallePlanActivo = () => {
       const planEncontrado = plans.find(
         (plan) => plan.offeringId === datosPlan.offering_datos
       );
-      // setPlanSeleccionado(planEncontrado || null);
       setLoading(false);
 
       // Actualizar la URL de la imagen basada en el plan encontrado
@@ -92,7 +102,7 @@ const DetallePlanActivo = () => {
   useEffect(() => {
     fetchData();
     fetchPlans();
-  }, []);
+  }, [fetchData]);
 
   if (loading) {
     return (
@@ -116,8 +126,6 @@ const DetallePlanActivo = () => {
     : { day: "--", monthYear: "--" };
   const diasRestantes = fecha ? calcularDiasRestantes(fecha) : 0;
   const gbInicial = convertirAGB(datos_iniciales);
-  // const gbgastado = convertirAGB(datos);
-
   const Internet = restarSinRetorno(datos_iniciales, datos);
   const Totalgb = convertirAGB(Internet);
   const Mensaje = restarSinRetorno(mensajes_iniciales, mensajes);
@@ -141,75 +149,90 @@ const DetallePlanActivo = () => {
         />
       </View>
 
-      {/* Imagen del plan activo */}
-      <View style={styles.promoContainer}>
-        <Image
-          source={{ uri: urlImagen }}
-          style={styles.promoImage}
-          resizeMode="cover"
-        />
-      </View>
+      {/* Mensaje de error si no hay un plan activo */}
+      {error && (
+        <View style={styles.errorContainer}>
+        <Icon name="build" size={60} color="#ccc" />
+        <Text style={styles.noServicesText}>¡Ups!</Text>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => navigation.navigate("PlansDatos")}
+        >
+          <Text style={styles.buttonText}>Ver Planes</Text>
+        </TouchableOpacity>
+      </View>      
+      )}
 
-      {/* para mostrar dias y fecha fin */}
-      <View style={styles.card}>
-        <Text style={styles.cardDescription}>Fecha que expira el plan</Text>
-
-        {/* Contenido de la tarjeta */}
-        <View style={styles.cardContent}>
-          {/* Fecha */}
-          <View style={styles.leftSection}>
-            <Text style={styles.dateText}>{fechaFormateada.day}</Text>
-            <Text style={styles.monthText}>{fechaFormateada.monthYear}</Text>
+      {/* Mostrar detalles del plan solo si hay datos */}
+      {datosPlan && (
+        <>
+          {/* Imagen del plan activo */}
+          <View style={styles.promoContainer}>
+            <Image
+              source={{ uri: urlImagen }}
+              style={styles.promoImage}
+              resizeMode="cover"
+            />
+          </View>
+          {/* Fecha de expiración */}
+          <View style={styles.card}>
+            <Text style={styles.cardDescription}>Fecha que expira el plan</Text>
+            <View style={styles.cardContent}>
+              <View style={styles.leftSection}>
+                <Text style={styles.dateText}>{fechaFormateada.day}</Text>
+                <Text style={styles.monthText}>
+                  {fechaFormateada.monthYear}
+                </Text>
+              </View>
+              <View style={styles.rightSection}>
+                <Text style={styles.timeText}>{diasRestantes}</Text>
+                <Text style={styles.countryText}>
+                  {diasRestantes === 1 ? "Día" : "Días"}
+                </Text>
+              </View>
+            </View>
           </View>
 
-          {/* Días restantes */}
-          <View style={styles.rightSection}>
-            <Text style={styles.timeText}>{diasRestantes}</Text>
-            <Text style={styles.countryText}>
-              {diasRestantes === 1 ? "Día" : "Días"}
+          {/* Barras de progreso */}
+          <View style={styles.card}>
+            <Text style={styles.cardDescription}>Detalle del consumo</Text>
+            <ProgressBar
+              iconName="wifi"
+              label="Internet"
+              value={Totalgb}
+              minValue={Totalgb}
+              maxValue={gbInicial}
+              tipo={"GB"}
+              color="#007BFF"
+            />
+            <ProgressBar
+              iconName="chatbubble-outline"
+              label="SMS"
+              value={Mensaje}
+              minValue={Mensaje}
+              maxValue={mensajes_iniciales}
+              tipo={"SMS"}
+              color="#d9258e"
+            />
+            <ProgressBar
+              iconName="call"
+              label="Llamadas"
+              value={llamdas}
+              minValue={llamdas}
+              maxValue={minutos_iniciales}
+              tipo={"MIN"}
+              color="#28a745"
+            />
+          </View>
+          {/* Mensaje de cobertura */}
+          <View style={styles.card}>
+            <Text style={styles.cardDescription}>
+              Llamadas y SMS con Cobertura Nacional, Estados Unidos y Canada
             </Text>
           </View>
-        </View>
-      </View>
-
-      {/* Barras de progreso */}
-      <View style={styles.card}>
-        <Text style={styles.cardDescription}>
-          Detalle del consumo
-        </Text>
-        <ProgressBar
-          iconName="wifi"
-          label="Internet"
-          value={Totalgb}
-          minValue={Totalgb}
-          maxValue={gbInicial}
-          tipo={"GB"}
-          color="#007BFF"
-        />
-        <ProgressBar
-          iconName="chatbubble-outline"
-          label="SMS"
-          value={Mensaje}
-          minValue={Mensaje}
-          maxValue={datosPlan?.mensajes_iniciales}
-          tipo={"SMS"}
-          color="#d9258e"
-        />
-        <ProgressBar
-          iconName="call"
-          label="Llamadas"
-          value={llamdas}
-          minValue={llamdas}
-          maxValue={datosPlan?.minutos_iniciales}
-          tipo={"MIN"}
-          color="#28a745"
-        />
-      </View>
-      <View style={styles.card}>
-        <Text style={styles.cardDescription}>
-          Llamadas y SMS con Cobertura Nacional, Estados Unidos y Canada
-        </Text>
-      </View>
+        </>
+      )}
     </View>
   );
 };
@@ -268,10 +291,45 @@ const styles = StyleSheet.create({
     height: width * 0.4,
     alignSelf: "center",
   },
+  errorContainer: {
+    flex: 1,
+    marginTop: 10,
+    padding: 10,
+    // backgroundColor: "#ffebee",
+    borderRadius: 5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  noServicesText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#555",
+    marginTop: 10,
+  },
+  errorText: {
+    color: "#999",
+    fontSize: 16,
+    marginTop: 8,
+    textAlign: "center",
+    // fontWeight: "bold",
+  },
+  button: {
+    marginTop: 15,
+    backgroundColor: "#007bff",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },  
   card: {
     backgroundColor: "#fff",
     borderRadius: 10,
-    padding: 20,
+    padding: 10,
     marginVertical: 15,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
@@ -280,7 +338,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   cardDescription: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "bold",
     color: "#333",
     textAlign: "center",

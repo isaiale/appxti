@@ -3,37 +3,34 @@
     "name": "app-movil-xti",
     "slug": "app-movil-xti",
     "version": "1.0.0",
-    "sdkVersion": "52.0.0",
-    "projectId": "f15b8b4c-e351-4a0b-a2c1-39e2d33f48a5",
+    "sdkVersion": "52.0.0",    
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logoinicioxtiremove.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/logoinicioxtiremove.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#3A4350"
     },
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/logoinicioxti.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.isaialef.appmovilxti"      
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/logoinicioxti.png"
     },
     "extra": {
       "eas": {
         "projectId": "f17d50d7-dad4-4052-a9f3-8ca5c125657f"
       }
-    },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    },    
     "updates": {
       "url": "https://u.expo.dev/f17d50d7-dad4-4052-a9f3-8ca5c125657f"
     }

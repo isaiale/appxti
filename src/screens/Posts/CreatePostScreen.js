@@ -13,6 +13,7 @@ import {
 import Icon from "react-native-vector-icons/Ionicons";
 import * as ImagePicker from "expo-image-picker";
 import { AuthContext } from "../../context/AuthContext";
+import NetInfo from "@react-native-community/netinfo";
 import { baseURL } from "../../services/url";
 
 const CreatePost = ({ navigation }) => {
@@ -23,48 +24,38 @@ const CreatePost = ({ navigation }) => {
 
   // Función para elegir si el usuario quiere tomar una foto o seleccionar de la galería
   const handleMediaUpload = async () => {
-    Alert.alert("Seleccionar imagen", "Elige una opción:", [
-      { text: "Tomar foto", onPress: openCamera },
-      { text: "Elegir de galería", onPress: openGallery },
-      { text: "Cancelar", style: "cancel" },
-    ]);
-  };
-
-  // 📸 Tomar una foto con la cámara
-  const openCamera = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permiso denegado", "Necesitamos acceso a tu cámara.");
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      setSelectedImage(result.assets[0]);
-    }
-  };
-
-  // 📂 Seleccionar una imagen de la galería
-  const openGallery = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permiso denegado", "Necesitamos acceso a tu galería.");
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
+    const options = {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      quality: 0.8,
-    });
+      aspect: [4, 5],
+      quality: 1,
+    };
 
-    if (!result.canceled) {
-      setSelectedImage(result.assets[0]);
-    }
+    Alert.alert(
+      "Seleccionar imagen",
+      "¿Quieres tomar una foto o elegir de la galería?",
+      [
+        {
+          text: "Cámara",
+          onPress: async () => {
+            let result = await ImagePicker.launchCameraAsync(options);
+            if (!result.canceled) {
+              setSelectedImage(result.assets[0]);
+            }
+          },
+        },
+        {
+          text: "Galería",
+          onPress: async () => {
+            let result = await ImagePicker.launchImageLibraryAsync(options);
+            if (!result.canceled) {
+              setSelectedImage(result.assets[0]);
+            }
+          },
+        },
+        { text: "Cancelar", style: "cancel" },
+      ]
+    );
   };
 
   // 🚀 Enviar la publicación al servidor
@@ -86,6 +77,12 @@ const CreatePost = ({ navigation }) => {
     });
 
     try {
+      const state = await NetInfo.fetch();
+      if (!state.isConnected) {
+        Alert.alert("Error", "No hay conexión a internet");
+        return;
+      }
+
       const response = await fetch(`${baseURL}/post/crear`, {
         method: "POST",
         headers: {
@@ -96,10 +93,13 @@ const CreatePost = ({ navigation }) => {
 
       const data = await response.json();
       if (response.ok) {
-        Alert.alert("Éxito", "¡Publicación creada con éxito!");
+        // Alert.alert("Éxito", "¡Publicación creada con éxito!");
+        console.log("Publicación creada:", data);
+
         setDescription("");
         setSelectedImage(null);
-        navigation.navigate("Drawer", { screen: "Posts" });
+        navigation.goBack();
+        // navigation.navigate("Drawer", { screen: "Posts" });
       } else {
         Alert.alert("Mensaje", data.message || "Ocurrió un error.");
       }
@@ -153,7 +153,7 @@ const CreatePost = ({ navigation }) => {
       <View style={styles.descriptionContainer}>
         <TextInput
           style={styles.textInput}
-          placeholder="¿Qué quieres compartir?"
+          placeholder="Haz una descripción de tu publicación"
           placeholderTextColor="#999"
           multiline
           value={description}
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   },
   mediaPreview: {
     width: "100%",
-    height: 300,
+    height: 600,
     marginVertical: 10,
     borderRadius: 10,
   },

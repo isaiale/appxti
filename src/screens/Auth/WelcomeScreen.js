@@ -1,18 +1,16 @@
 import React from "react";
 import { View, StyleSheet, Image } from "react-native";
-import logoinicio from "../../../assets/logoinicio.png";
+import logoinicio from "../../../assets/logoinicioxtiremove.png";
 import CustomButton from "../../components/CustomButton";
 import CustomText from "../../components/CustomText";
+import Colors from "../../config/global_colors";
 
 const WelcomeScreen = ({ navigation }) => {
   return (
-    <View style={styles.container}>
-      {/* Top Section */}
+    <View style={styles.container}>      
       <View style={styles.topSection}>
         <Image source={logoinicio} style={styles.logo} />;
-      </View>
-
-      {/* Bottom Section */}
+      </View>      
       <View style={styles.bottomSection}>
         <CustomText variant="screenTitle" style={styles.welcomeText}>
           Bienvenido
@@ -24,7 +22,7 @@ const WelcomeScreen = ({ navigation }) => {
         <View style={styles.buttonContainer}>
           <CustomButton
             title="Iniciar sesión"            
-            color="#007BFF"
+            color={Colors.colorSplash}
             textColor="#FFF"
             onPress={() => navigation.navigate("Login")}
           />
@@ -42,13 +40,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     // backgroundColor: '#FFFFFF',
-    backgroundColor: "#007BFF",
+    backgroundColor: Colors.colorSplash,
   },
   topSection: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#007BFF",
+    backgroundColor: Colors.colorSplash,
   },
   logo: {
     width: 250,

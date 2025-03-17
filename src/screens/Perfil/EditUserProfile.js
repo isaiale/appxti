@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import {
   View,
   Text,
@@ -8,8 +8,14 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  Image,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
+import * as ImagePicker from "expo-image-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import NetInfo from "@react-native-community/netinfo";
+import { baseURL } from "../../services/url";
+import { AuthContext } from "../../context/AuthContext";
 
 const EditUserProfile = ({
   visible,
@@ -20,29 +26,117 @@ const EditUserProfile = ({
 }) => {
   const [formData, setFormData] = useState({
     nombre: user?.nombre || "",
-    a_paterno: user?.a_paterno || "",
+    apellido_paterno: user?.a_paterno || "",
+    apellido_materno: user?.a_materno || "",
     correo: user?.correo || "",
-    telefono: user?.telefono || "",
-    nombre_estado: user?.nombre_estado || "",
-    nombre_municipio: user?.nombre_municipio || "",
-    nombre_partido: user?.nombre_partido || "",
+    foto_perfil: user?.foto_perfil || null,
   });
+  const [camposModificados, setCamposModificados] = useState({
+    nombre: false,
+    apellido_paterno: false,
+    apellido_materno: false,
+    correo: false,
+    foto_perfil: false,
+  });
+  const { refreshUser } = useContext(AuthContext);
+  const [cambios, setCambios] = useState({}); // Objeto para rastrear cambios
 
-  const handleSave = () => {
-    if (!formData.nombre.trim() || !formData.correo.trim()) {
-      Alert.alert("Error", "Nombre y correo son campos obligatorios.");
-      return;
-    }
-    onSave(formData);
+  const selectImage = async () => {
+    console.log("cambiar img");
+    const options = {
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    };
+
     Alert.alert(
-      "Perfil actualizado",
-      "Los cambios se han guardado correctamente."
+      "Seleccionar imagen",
+      "¿Quieres tomar una foto o elegir de la galería?",
+      [
+        {
+          text: "Cámara",
+          onPress: async () => {
+            let result = await ImagePicker.launchCameraAsync(options);
+            if (!result.canceled) {
+              setFormData({ ...formData, foto_perfil: result.assets[0].uri });
+              setCamposModificados({ ...camposModificados, foto_perfil: true });
+            }
+          },
+        },
+        {
+          text: "Galería",
+          onPress: async () => {
+            let result = await ImagePicker.launchImageLibraryAsync(options);
+            if (!result.canceled) {
+              setFormData({ ...formData, foto_perfil: result.assets[0].uri });
+              setCamposModificados({ ...camposModificados, foto_perfil: true });
+            }
+          },
+        },
+        { text: "Cancelar", style: "cancel" },
+      ]
     );
-    onClose();
+  };
+
+  const handleSave = async () => {
+    try {
+      const form = new FormData();
+      form.append("id", user.id);
+      form.append("nombre", formData.nombre);
+      form.append("apellido_paterno", formData.apellido_paterno);
+      form.append("apellido_materno", formData.apellido_materno);
+      form.append("correo", formData.correo);
+
+      if (camposModificados.foto_perfil) {
+        form.append("foto_perfil", {
+          uri: formData.foto_perfil,
+          name: formData.foto_perfil.split("/").pop(),
+          type: "image/jpeg",
+        });
+      } else{
+        form.append("foto_perfil", formData.foto_perfil);
+      }
+
+      console.log("infouser", form);
+      
+      const state = await NetInfo.fetch();
+      if(!state.isConnected){
+        Alert.alert("Error", "No hay conexión a internet");
+        return;
+      }
+
+      const response = await fetch(`${baseURL}/userspartido/update`, {
+        method: "PUT",
+        headers: { "Content-Type": "multipart/form-data" },
+        body: form,
+      });
+
+      const result = await response.json();
+      console.log("result: ", result);
+
+      if (response.ok) {
+        const updatedUser = { ...user, ...formData };
+        await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
+        refreshUser();
+        Alert.alert("Éxito", "Perfil actualizado correctamente.");
+        onSave(updatedUser);
+        onClose();
+      } else {
+        Alert.alert(
+          "Error",
+          result.message || "No se pudo actualizar el perfil."
+        );
+      }
+    } catch (error) {
+      Alert.alert("Error", "No se pudo conectar con el servidor.");
+      console.error(error);
+    }
   };
 
   const handleChange = (key, value) => {
     setFormData({ ...formData, [key]: value });
+    setCambios({ ...cambios, [key]: value }); // Registrar cambio
   };
 
   return (
@@ -54,16 +148,28 @@ const EditUserProfile = ({
     >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
-          {/* Encabezado */}
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Editar Perfil</Text>
             <TouchableOpacity onPress={onClose}>
-              <Icon name="close" size={24} color="#FFF" />
+              <Icon name="close" size={28} color="black" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.imageContainer}>
+            <Image
+              source={{
+                uri: formData.foto_perfil
+                  ? formData.foto_perfil
+                  : user?.foto_perfil,
+              }}
+              style={styles.profileImage}
+            />
+            <TouchableOpacity style={styles.imageButton} onPress={selectImage}>
+              <Text style={styles.imageButtonText}>Cambiar perfil</Text>
             </TouchableOpacity>
           </View>
 
           <ScrollView>
-            {/* Campos de Edición */}
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Nombre</Text>
               <TextInput
@@ -76,12 +182,23 @@ const EditUserProfile = ({
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Apellido</Text>
+              <Text style={styles.inputLabel}>Apellido Paterno</Text>
               <TextInput
                 style={styles.input}
-                value={formData.a_paterno}
-                onChangeText={(text) => handleChange("a_paterno", text)}
-                placeholder="Apellido"
+                value={formData.apellido_paterno}
+                onChangeText={(text) => handleChange("apellido_paterno", text)}
+                placeholder="Apellido Paterno"
+                placeholderTextColor="#999"
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Apellido Materno</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.apellido_materno}
+                onChangeText={(text) => handleChange("apellido_materno", text)}
+                placeholder="Apellido Materno"
                 placeholderTextColor="#999"
               />
             </View>
@@ -98,51 +215,6 @@ const EditUserProfile = ({
               />
             </View>
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Teléfono</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.telefono}
-                onChangeText={(text) => handleChange("telefono", text)}
-                placeholder="Teléfono"
-                placeholderTextColor="#999"
-                keyboardType="phone-pad"
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Estado</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.nombre_estado}
-                onChangeText={(text) => handleChange("nombre_estado", text)}
-                placeholder="Estado"
-                placeholderTextColor="#999"
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Municipio</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.nombre_municipio}
-                onChangeText={(text) => handleChange("nombre_municipio", text)}
-                placeholder="Municipio"
-                placeholderTextColor="#999"
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Partido</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.nombre_partido}
-                onChangeText={(text) => handleChange("nombre_partido", text)}
-                placeholder="Partido"
-                placeholderTextColor="#999"
-              />
-            </View>
-
             {showCancelButton && (
               <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
                 <Icon name="close-circle-outline" size={20} color="#FFF" />
@@ -150,7 +222,6 @@ const EditUserProfile = ({
               </TouchableOpacity>
             )}
 
-            {/* Botón Guardar */}
             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
               <Icon name="save-outline" size={20} color="#FFF" />
               <Text style={styles.saveButtonText}>Guardar</Text>
@@ -187,6 +258,28 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
   },
+  imageContainer: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 2,
+    borderColor: "#CCC",
+  },
+  imageButton: {
+    marginTop: 10,
+    backgroundColor: "#007BFF",
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+  },
+  imageButtonText: {
+    color: "#FFF",
+    fontWeight: "bold",
+  },
   inputContainer: {
     marginBottom: 15,
   },
@@ -218,12 +311,11 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginLeft: 8,
   },
-
   cancelButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FF3B30", // Rojo para indicar cancelación
+    backgroundColor: "#FF3B30",
     paddingVertical: 12,
     borderRadius: 25,
     marginTop: 10,
@@ -234,7 +326,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginLeft: 8,
   },
-  
 });
 
 export default EditUserProfile;

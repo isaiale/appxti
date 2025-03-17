@@ -50,4 +50,31 @@ const restarSinRetorno = (a, b) => {
   return resultado;
 };
 
-export { formatDate, calcularDiasRestantes, convertirAGB, restarSinRetorno };
+const obtenerFechaHoraMexico = () => {
+  const fecha = new Date();
+
+  const opciones = {
+    timeZone: "America/Mexico_City",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  };
+
+  const fechaFormateada = new Intl.DateTimeFormat("es-MX", opciones)
+    .formatToParts(fecha)
+    .reduce((acc, part) => {
+      if (part.type !== "literal") {
+        acc[part.type] = part.value;
+      }
+      return acc;
+    }, {});
+
+  const fechaReporte = `${fechaFormateada.year}-${fechaFormateada.month}-${fechaFormateada.day} ${fechaFormateada.hour}:${fechaFormateada.minute}:${fechaFormateada.second}`;
+  return `${fechaReporte}`;
+};
+
+export { formatDate, calcularDiasRestantes, convertirAGB, restarSinRetorno, obtenerFechaHoraMexico };

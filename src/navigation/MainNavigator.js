@@ -2,6 +2,7 @@ import React, { useEffect, useContext, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createDrawerNavigator } from "@react-navigation/drawer";
+import { StatusBar } from "react-native";
 import { AuthContext } from "../context/AuthContext";
 import { TouchableOpacity, StyleSheet, Text, Image, View } from "react-native";
 import Colors from "../config/global_colors";
@@ -27,19 +28,65 @@ import DetallePlanActivo from "../screens/PlanActivo/DetallePlanScreen";
 import ServicesScreen from "../screens/Services/ServicesScreen";
 import DesignDetails from "../screens/Services/DetailsScreen";
 import InfoDetailsScreen from "../screens/Services/InfoDetailsScreen";
-// import ReportScreen from "../screens/Report/ReportScreen";
+import ReportScreen from "../screens/Report/ReportScreen";
+import AddReportScreen from "../screens/Report/AddReportScreen";
+import FormularioInvitacion from "../screens/Afiliar/AfiliarScreen";
+import SolicitudServicio from "../screens/SolicitudServicio/SolicitudServicioScreen";
 
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
 
 function AppStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <>
+    
+    <Stack.Navigator
+      screenOptions={{
+        headerTintColor: "#fff",
+        headerShown: false,
+        headerShadowVisible: false,
+        headerStyle: {
+          backgroundColor: Colors.colorSplash,
+        },
+      }}
+    >
       <Stack.Screen name="welcome" component={WelcomeScreen} />
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Register" component={RegisterScreen} />
-      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+      <Stack.Screen
+        name="Login"
+        component={LoginScreen}
+        options={({ navigation }) => ({
+          headerShown: true,
+          headerTitle: "",
+          headerBackTitle: "Atrás",
+          headerRight: () => (
+            <TouchableOpacity onPress={() => navigation.navigate("Register")}>
+              <Text style={styles.buttonTextRegister}>Registrar</Text>
+            </TouchableOpacity>
+          ),
+        })}
+      />
+      <Stack.Screen
+        name="Register"
+        component={RegisterScreen}
+        options={() => ({
+          headerShown: true,
+          headerTitle: "",
+          headerBackTitle: "Atrás",
+        })}
+      />
+      <Stack.Screen
+        name="ForgotPassword"
+        component={ForgotPasswordScreen}
+        options={() => ({
+          headerShown: true,
+          headerTitle: "",
+          headerBackTitle: "Atrás",
+          headerStyle: { backgroundColor: "#F0F0F0" },
+          headerTintColor: "black",
+        })}
+      />
     </Stack.Navigator>
+    </>
   );
 }
 
@@ -73,11 +120,11 @@ function DrawerNavigator() {
       screenOptions={{
         headerShown: true,
         headerStyle: {
-          backgroundColor: user?.codigo_color ? user?.codigo_color : "#F0F0F0",  
+          backgroundColor: user?.codigo_color ? user?.codigo_color : "#F0F0F0",
           elevation: 0, // Remove shadow on Android
           shadowOpacity: 0, // Remove shadow on iOS
         },
-        headerTintColor: user?.codigo_color ? '#fff' : 'black',
+        headerTintColor: user?.codigo_color ? "#fff" : "black",
       }}
     >
       <Drawer.Screen
@@ -95,8 +142,7 @@ function DrawerNavigator() {
           headerTitleAlign: "center", // Centrar logo
         }}
       />
-      <Drawer.Screen name="News" component={NewsListScreen} />
-      <Drawer.Screen name="NewsDetail" component={NewsDetailScreen} />
+      
       {/* <Drawer.Screen
         name="Posts"
         component={PostsScreen}
@@ -114,7 +160,6 @@ function DrawerNavigator() {
         })}
       /> */}
       {/* <Drawer.Screen name="Promociones" component={PromoCreen} /> */}
-      <Drawer.Screen name="Perfil" component={UserProfile} />
     </Drawer.Navigator>
   );
 }
@@ -131,13 +176,23 @@ export default function MainNavigator() {
 
   return (
     <NavigationContainer>
+      <StatusBar
+        backgroundColor={user?.codigo_color ? user.codigo_color : Colors.colorSplash}
+        barStyle={user?.codigo_color ? "light-content" : "dark-content"} // Ajusta el color del texto del status bar
+      />
       <Stack.Navigator
         initialRouteName={initialRoute}
-        screenOptions={{ headerShown: false, headerStyle: {
-          backgroundColor: user?.codigo_color ? user?.codigo_color : "#F0F0F0",  
-          elevation: 0, // Remove shadow on Android
-          shadowOpacity: 0, // Remove shadow on iOS
-        }, headerTintColor: user?.codigo_color ? '#fff' : 'black',}}
+        screenOptions={{
+          headerShown: false,
+          headerStyle: {
+            backgroundColor: user?.codigo_color
+              ? user?.codigo_color
+              : "#F0F0F0",
+            elevation: 0,
+            shadowOpacity: 0,
+          },
+          headerTintColor: user?.codigo_color ? "#fff" : "black",
+        }}
       >
         <Stack.Screen name="Splash" component={SplashScreen} />
         <Stack.Screen name="AuthStack" component={AppStack} />
@@ -156,7 +211,7 @@ export default function MainNavigator() {
           component={ServicesScreen}
           options={{
             headerShown: true,
-            headerTitle: "Servicios",
+            headerTitle: "Directorio de Servicios",
             headerBackTitle: "Atrás",
           }}
         />
@@ -169,15 +224,23 @@ export default function MainNavigator() {
             headerBackTitle: "Atrás",
           }}
         />
-        {/* <Stack.Screen
+        <Stack.Screen
           name="ReportUser"
           component={ReportScreen}
-          options={{
+          options={({ navigation }) => ({
             headerShown: true,
             headerTitle: "Reporte ciudadano",
             headerBackTitle: "Atrás",
-          }}
-        /> */}
+            headerRight: () => (
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => navigation.navigate("CreateReport")}
+              >
+                <Text style={styles.buttonText}>Agregar</Text>
+              </TouchableOpacity>
+            ),
+          })}
+        />
         <Stack.Screen
           name="DetalleUserService"
           component={InfoDetailsScreen}
@@ -187,28 +250,32 @@ export default function MainNavigator() {
             headerBackTitle: "Atrás",
           }}
         />
-        <Stack.Screen name="Promociones" component={PromoCreen} options={{
+        <Stack.Screen
+          name="Promociones"
+          component={PromoCreen}
+          options={{
             headerShown: true,
             headerTitle: "Promociones",
             headerBackTitle: "Atrás",
-          }}/>
+          }}
+        />
         <Stack.Screen
-        name="Posts"
-        component={PostsScreen}
-        options={({ navigation }) => ({
-          headerShown: true,
-          headerTitle: "Publicaciones",
-          headerBackTitle: "Atrás",
-          headerRight: () => (
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => navigation.navigate("CreatePost")}
-            >
-              <Text style={styles.buttonText}>Conectate</Text>
-            </TouchableOpacity>
-          ),
-        })}
-      />
+          name="Posts"
+          component={PostsScreen}
+          options={({ navigation }) => ({
+            headerShown: true,
+            headerTitle: "Publicaciones",
+            headerBackTitle: "Atrás",
+            headerRight: () => (
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => navigation.navigate("CreatePost")}
+              >
+                <Text style={styles.buttonText}>Conectate</Text>
+              </TouchableOpacity>
+            ),
+          })}
+        />
         <Stack.Screen
           name="DetallePlanActivo"
           component={DetallePlanActivo}
@@ -229,6 +296,54 @@ export default function MainNavigator() {
             headerTitle: "Crear publicación",
             headerBackTitle: "Atrás",
           }} // Mostrar un botón de regreso 007BFF
+        />
+        <Stack.Screen
+          name="CreateReport"
+          component={AddReportScreen}
+          options={{
+            headerShown: true,
+            headerTitle: "Agregar reporte",
+            headerBackTitle: "Atrás",
+          }} // Mostrar un botón de regreso 007BFF
+        />
+        <Stack.Screen
+          name="FormularioInvitacion"
+          component={FormularioInvitacion}
+          options={{
+            headerShown: true,
+            headerTitle: "Afiliar",
+            headerBackTitle: "Atrás",
+          }} // Mostrar un botón de regreso 007BFF
+        />
+        <Stack.Screen
+          name="Perfil"
+          component={UserProfile}
+          options={() => ({
+            headerShown: true,
+            headerTitle: "Perfil",
+            headerBackTitle: "Atrás",
+          })}
+        />
+        <Stack.Screen
+          name="SolicitudServicio"
+          component={SolicitudServicio}
+          options={() => ({
+            headerShown: true,
+            headerTitle: "Solicitud de servicio",
+            headerBackTitle: "Atrás",
+          })}
+        />
+        <Stack.Screen name="News" component={NewsListScreen} options={() => ({
+            headerShown: true,
+            headerTitle: "Noticias",
+            headerBackTitle: "Atrás",
+          })}
+        />
+        <Stack.Screen name="NewsDetail" component={NewsDetailScreen} options={() => ({
+            headerShown: true,
+            headerTitle: "Detalles",
+            headerBackTitle: "Atrás",
+          })}
         />
       </Stack.Navigator>
     </NavigationContainer>
@@ -258,6 +373,12 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     fontSize: 15,
     fontWeight: "bold",
+    marginRight: 10,
+  },
+  buttonTextRegister: {
+    color: "#fff",
+    fontSize: 18,
+    marginRight: 15,
   },
   bordeContainer: {
     width: 120,

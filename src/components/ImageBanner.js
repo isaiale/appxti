@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect, useContext } from "react";
-import { View, FlatList, Image, Dimensions, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, FlatList, Image, Dimensions, StyleSheet, ActivityIndicator } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import { baseURL } from "../services/url";
 import { AuthContext } from "../context/AuthContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width } = Dimensions.get("window");
 const sliderHeight = 150;
 const DEFAULT_IMAGE = "https://likephone.mx/public/iconos/fondo1.png";
+const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutos
 
 const ImageSlider = () => {
   const { user } = useContext(AuthContext);
@@ -17,41 +19,53 @@ const ImageSlider = () => {
   const flatListRef = useRef(null);
   const id_partido = user?.id_partido ?? null;
 
+  // Función para obtener imágenes de la API y guardarlas en AsyncStorage
   const fetchImages = async () => {
     try {
       const state = await NetInfo.fetch();
       if (!state.isConnected) {
         setError("No hay conexión a internet");
-        setImages([DEFAULT_IMAGE]);
+        loadCachedImages();
         return;
       }
-      
-      const response = await fetch(`${baseURL}/imagenes_banner/partido/${id_partido}`); 
+
+      const response = await fetch(`${baseURL}/imagenes_banner/partido/${id_partido}`);
       const data = await response.json();
-      if (data.success && data.imagenes && Array.isArray(data.imagenes) && data.imagenes.length > 0) {
+      if (data.success && Array.isArray(data.imagenes) && data.imagenes.length > 0) {
         const imageUrls = data.imagenes.map(img => img.ruta_imagen);
         setImages(imageUrls);
+        await AsyncStorage.setItem("cachedImages", JSON.stringify(imageUrls)); // Guardar en caché
       } else {
         setError("No se encontraron imágenes");
         setImages([DEFAULT_IMAGE]);
       }
     } catch (err) {
       setError("Error al cargar imágenes");
-      setImages([DEFAULT_IMAGE]);
+      loadCachedImages(); // Si hay error, intentar cargar imágenes guardadas
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchImages();
-  }, []);
+  // Función para cargar imágenes desde AsyncStorage si no hay conexión
+  const loadCachedImages = async () => {
+    try {
+      const cachedImages = await AsyncStorage.getItem("cachedImages");
+      if (cachedImages) {
+        setImages(JSON.parse(cachedImages));
+      } else {
+        setImages([DEFAULT_IMAGE]);
+      }
+    } catch (err) {
+      setImages([DEFAULT_IMAGE]);
+    }
+  };
 
   useEffect(() => {
-    if (images.length === 0) {
-      fetchImages();
-    }
-  }, [images]);
+    fetchImages(); // Cargar imágenes al inicio
+    const interval = setInterval(fetchImages, REFRESH_INTERVAL); // Refrescar cada 5 minutos
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (images.length > 0) {

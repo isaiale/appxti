@@ -23,7 +23,7 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     borderRadius: 20,
-    padding: 15,
+    padding: 11,
     marginVertical: 10,
     width: width * 0.9,
     alignSelf: "center",
@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: "black",
-    fontSize: 20,
+    fontSize: 15,
     fontWeight: "bold",
     marginTop: 10,
   },

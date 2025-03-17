@@ -55,6 +55,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginVertical: 10,
     backgroundColor: "#fff",
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
   input: {
     flex: 1, // Permite que el input ocupe todo el espacio disponible

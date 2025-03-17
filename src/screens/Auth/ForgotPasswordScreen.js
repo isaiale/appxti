@@ -4,9 +4,9 @@ import CustomText from "../../components/CustomText";
 import CustomTextInput from "../../components/CustomTextInput";
 import { View, TextInput, StyleSheet, Alert } from "react-native";
 import Colors from "../../config/global_colors";
-import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { baseURL } from "../../services/url";
+import NetInfo from "@react-native-community/netinfo";
 
 const PasswordRecovery = ({ route }) => {
   const [step, setStep] = useState(1); // 1: Recovery, 2: Code Verification, 3: Reset Password
@@ -31,6 +31,13 @@ const PasswordRecovery = ({ route }) => {
       }
 
       setLoading(true); // Activar el estado de carga
+
+      const state = NetInfo.fetch();
+      if (!state.isConnected) {
+        setLoading(false);
+        Alert.alert("Error", "No hay conexión a internet.");
+        return;
+      }
 
       // Construcción del cuerpo de la solicitud
       const requestBody =
@@ -75,6 +82,13 @@ const PasswordRecovery = ({ route }) => {
       }
 
       setLoading(true); // Activar el estado de carga
+
+      const state = NetInfo.fetch();
+      if (!state.isConnected) {
+        setLoading(false);
+        Alert.alert("Error", "No hay conexión a internet.");
+        return;
+      }
 
       // Construcción del cuerpo de la solicitud
       const requestBody =
@@ -124,6 +138,13 @@ const PasswordRecovery = ({ route }) => {
 
       setLoading(true); // Activar el estado de carga
 
+      const state = NetInfo.fetch();
+      if (!state.isConnected) {
+        setLoading(false);
+        Alert.alert("Error", "No hay conexión a internet.");
+        return;
+      }
+
       // Construcción del cuerpo de la solicitud
       const requestBody =
         option === 1
@@ -145,7 +166,7 @@ const PasswordRecovery = ({ route }) => {
               "Éxito",
               "La contraseña ha sido restablecida correctamente."
             );
-            navigation.navigate("Login");  // Avanzar a la pantalla de éxito o login
+            navigation.navigate("Login"); // Avanzar a la pantalla de éxito o login
           } else {
             Alert.alert(
               "Error",
@@ -198,7 +219,7 @@ const PasswordRecovery = ({ route }) => {
           <CustomButton
             title="Recuperar contraseña"
             onPress={handleNextStep}
-            color={Colors.colorPrincipal}
+            color={Colors.textColorSeundario}
             textColor={Colors.textColor}
             loading={loading}
           />
@@ -234,7 +255,7 @@ const PasswordRecovery = ({ route }) => {
             title="Verificar"
             /* icon="create-outline" */
             onPress={handleNextStep}
-            color={Colors.colorPrincipal}
+            color={Colors.textColorSeundario}
             textColor={Colors.textColor}
             loading={loading}
           />
@@ -262,7 +283,7 @@ const PasswordRecovery = ({ route }) => {
           <CustomButton
             title="Hecho"
             onPress={handleNextStep}
-            color={Colors.colorPrincipal}
+            color={Colors.textColorSeundario}
             textColor={Colors.textColor}
             loading={loading}
           />
@@ -273,18 +294,7 @@ const PasswordRecovery = ({ route }) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.topSection}>
-        <View style={styles.topRow}>
-          <CustomText variant="title" onPress={() => navigation.goBack()}>
-            <Ionicons
-              name="arrow-back"
-              size={24}
-              color="black"
-              style={styles.backIcon}
-            />
-          </CustomText>
-        </View>
-      </View>
+      <View style={styles.topSection}></View>
       <View style={styles.bottomSection}>{renderStep()}</View>
     </View>
   );
@@ -299,15 +309,6 @@ const styles = StyleSheet.create({
   topSection: {
     flex: 1,
     justifyContent: "flex-start", // Asegura que los elementos comiencen desde arriba
-  },
-  topRow: {
-    flexDirection: "row",
-    marginTop: 15,
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  backIcon: {
-    marginLeft: -5,
   },
   codeContainer: {
     flexDirection: "row",

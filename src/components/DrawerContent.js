@@ -1,7 +1,6 @@
 import React, { useContext } from "react";
 import { View, StyleSheet, Image, TouchableOpacity } from "react-native";
 import { AuthContext } from "../context/AuthContext";
-// import CustomButton from "./CustomButton";
 import CustomText from "./CustomText";
 import Icon from "react-native-vector-icons/Ionicons";
 
@@ -10,7 +9,11 @@ const DrawerContent = ({ navigation }) => {
 
   const handleLogout = () => {
     logout();
-    navigation.navigate("AuthStack");
+    // navigation.navigate("AuthStack");
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "AuthStack" }],
+    });
   };
 
   return (
@@ -27,8 +30,7 @@ const DrawerContent = ({ navigation }) => {
           {`${user?.nombre || "Guest"} ${user?.a_paterno || ""}`}
         </CustomText>
         <CustomText variant="caption" style={styles.email}>
-          { "Hola, bienvenido!"}
-          {/* {`${user?.nombre_estado || "Guest"}, ${user?.nombre_municipio || ""}`} */}
+          { "Hola, bienvenido!"}        
         </CustomText>
 
       </View>
@@ -112,19 +114,19 @@ const DrawerContent = ({ navigation }) => {
 
         {/* <TouchableOpacity
           style={styles.menuItem}
-          onPress={() => navigation.navigate("Settings")}
+          onPress={() => navigation.navigate("ReportUser")}
         >
           <Icon name="settings-outline" size={20} color="#000" />
           <CustomText style={styles.menuText}>Settings</CustomText>
         </TouchableOpacity> */}
 
-        {/* <TouchableOpacity
+        <TouchableOpacity
           style={styles.menuItem}
-          onPress={() => navigation.navigate("DetallePlanActivo")}
+          onPress={() => navigation.navigate("SolicitudServicio")}
         >
-          <Icon name="call-outline" size={20} color="#000" />
-          <CustomText style={styles.menuText}>Plan activo</CustomText>
-        </TouchableOpacity> */}
+          <Icon name="create-outline" size={20} color="#000" />
+          <CustomText style={styles.menuText}>Solicitud de Servicio</CustomText>
+        </TouchableOpacity>
       </View>
 
       {/* Botón de Logout en la parte inferior */}
@@ -156,7 +158,7 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     marginBottom: 10,
     borderWidth: 2,
-    borderColor: "#FFA500",
+    borderColor: "#000",
   },
   username: {
     fontSize: 18,

@@ -5,6 +5,7 @@ import { Appearance } from "react-native";
 
 const lightTheme = {
   primary: "#007BFF",  // color azul
+  colorSplash: "#3A4350",
   colorPrincipal: "#007BFF", //color azul para botones o fondos principal de app
   textColor: "#FFF",   //color blanco
   primaryDark: "#0056b3",
@@ -20,7 +21,32 @@ const lightTheme = {
 };
 
 const darkTheme = {
-  primary: "#1E90FF",
+  primary: "#007BFF",  // color azul
+  colorSplash: "#3A4350",
+  colorPrincipal: "#007BFF", //color azul para botones o fondos principal de app
+  textColor: "#FFF",   //color blanco
+  primaryDark: "#0056b3",
+  secondary: "#FFC107",
+  secondaryDark: "#E0A800", 
+  textPrimary: "#000000",   //color negro
+  textSecondary: "#666666",
+  backgroundLight: "#FFFFFF", //color blanco
+  backgroundDark: "#F5F5F5",  //color un gris bajo
+  textColorSeundario: "#FFA500",  //color naranja
+  error: "#DC3545",
+  success: "#28A745",
+};
+
+const colorScheme = Appearance.getColorScheme(); // Detecta el tema del sistema
+
+// Asignamos los colores globalmente
+global.Colors = colorScheme === "dark" ? darkTheme : lightTheme;
+
+export default global.Colors;
+
+
+/* primary: "#1E90FF",
+  colorSplash: "#3A4350",
   colorPrincipal: "#007BFF", //color azul
   textColor: "#FFF",   //color azul
   primaryDark: "#104E8B",
@@ -31,12 +57,4 @@ const darkTheme = {
   backgroundLight: "#121212",
   backgroundDark: "#1E1E1E",
   error: "#FF6B6B",
-  success: "#3CB371",
-};
-
-const colorScheme = Appearance.getColorScheme(); // Detecta el tema del sistema
-
-// Asignamos los colores globalmente
-global.Colors = colorScheme === "dark" ? darkTheme : lightTheme;
-
-export default global.Colors;
+  success: "#3CB371", */
